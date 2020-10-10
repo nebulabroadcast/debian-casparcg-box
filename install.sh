@@ -30,4 +30,6 @@ systemctl set-default multi-user.target
 
 cp support/.profile /home/$TARGET_USER/
 cp support/.xinitrc /home/$TARGET_USER/
+cp support/.Xresources /home/$TARGET_USER/
 cp support/logo.png /usr/share/pixmaps/nebula.png
+cp -r support/RobotoMono /usr/share/fonts/truetype/

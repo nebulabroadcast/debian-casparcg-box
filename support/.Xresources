@@ -1,0 +1,12 @@
+Xft.dpi: 96
+Xft.antialias: true
+
+
+URxvt*font: xft:RobotoMono-Regular:size=9
+URxvt*boldFont: xft:RobotoMono-SemiBold:size=9
+URxvt*italicFont: xft:RobotoMono-Italic:size=9
+URxvt*boldItalicFont: xft:RobotoMono-SemiBoldItalic:size=9
+
+URxvt*saveLines: 12000
+URxvt*scrollBar: false
+URxvt*cursorColor: #2c2d3c
