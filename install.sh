@@ -2,6 +2,10 @@
 
 TARGET_USER=nebula
 
+apt-get install -y --no-install-recommends \
+    xorg xinit xserver-xorg-input-kbd xserver-xorg-input-mouse \
+    rxvt-unicode xli
+
 getty_dir=/etc/systemd/system/getty@tty1.service.d
 mkdir -p $getty_dir
 cat <<EOT > $getty_dir/override.conf
@@ -23,8 +27,8 @@ GRUB_CMDLINE_LINUX=""
 GRUB_GFXMODE=800x600
 EOT
 
-apt-get install -y --no-install-recommends \
-    xorg xinit
+update-grub
+
 
 systemctl set-default multi-user.target
 
