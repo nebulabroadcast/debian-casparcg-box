@@ -23,7 +23,7 @@ xli \
 # Start a terminal with CasparCG server
 
 urxvt \
-    -bd white 
+    -bd white \
     -geometry 92x26+20+130 \
     -e /bin/bash \
     -c "/opt/casparcg/run.sh; /bin/bash"
