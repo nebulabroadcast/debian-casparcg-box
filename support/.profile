@@ -18,6 +18,6 @@ fi
 
 
 if [[ -z "$DISPLAY" ]] && [[ $(tty) = /dev/tty1 ]]; then
-#    echo "Starting X"
+    echo "Starting X"
     exec startx
 fi
