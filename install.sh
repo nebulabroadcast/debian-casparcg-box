@@ -31,6 +31,7 @@ apt-get install -y --no-install-recommends \
     xorg xinit \
     xserver-xorg-input-libinput xserver-xorg-input-kbd xserver-xorg-input-mouse \
     rxvt-unicode xli \
+    python3 python3-pip \
     linux-headers-$(uname -r) \
     software-properties-common || error_exit
 
@@ -41,7 +42,7 @@ apt-get install -y --no-install-recommends \
 add-apt-repository contrib
 add-apt-repository non-free
 apt-get update
-apt-get install -y nvidia-driver
+apt-get install -y nvidia-driver nvidia-smi
 
 #
 # Install decklink driver
@@ -149,5 +150,18 @@ chown -R $TARGET_USER:$TARGET_USER /var/playout
 chown -R $TARGET_USER:$TARGET_USER /opt/casparcg
 
 addgroup $TARGET_USER sudo
+
+#
+# Prometheus exporter
+#
+
+cd /opt
+git clone https://github.com/nebulabroadcast/nebula-prometheus-exporter
+cd nebula-prometheus-exporter
+make
+systemctl enable nebula-prometheus-exporter
+systemctl start nebula-prometheus-exporter
+
+
 
 finished
