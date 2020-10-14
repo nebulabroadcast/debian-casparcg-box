@@ -2,7 +2,8 @@
 
 **Experimental script. Not suitable for production.**
 
-This script installs CasparCG to Debian buster server. It assumes server has an NVidia GPU and Decklink card.
+This script installs CasparCG on a Debian buster server. 
+It assumes server has an NVidia GPU and Decklink card.
 After the setup, the server will boot directly to minimal X11 system with CasparCG running.
 
 ## Installation
