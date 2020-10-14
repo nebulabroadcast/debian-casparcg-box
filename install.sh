@@ -38,7 +38,8 @@ apt-get install -y --no-install-recommends \
 # Install Nvidia driver
 #
 
-add-apt repository non-free
+add-apt-repository contrib
+add-apt-repository non-free
 apt-get update
 apt-get install -y nvidia-driver
 
@@ -72,12 +73,12 @@ systemctl set-default multi-user.target
 #
 
 cat <<EOT > /etc/default/grub
-GRUB_DEFAULT=0
-GRUB_TIMEOUT=0
-GRUB_TIMEOUT_STYLE=hidden
-GRUB_HIDDEN_TIMEOUT_QUIET=true
-GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
-GRUB_CMDLINE_LINUX_DEFAULT="quiet"
+#GRUB_DEFAULT=0
+#GRUB_TIMEOUT=0
+#GRUB_TIMEOUT_STYLE=hidden
+#GRUB_HIDDEN_TIMEOUT_QUIET=true
+GRUB_DISTRIBUTOR=`Nebula Broadcast`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet nomodeset"
 GRUB_CMDLINE_LINUX=""
 GRUB_GFXMODE=800x600
 EOT
