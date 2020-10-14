@@ -148,4 +148,6 @@ ln -s /var/playout/log.dir /opt/casparcg/log
 chown -R $TARGET_USER:$TARGET_USER /var/playout
 chown -R $TARGET_USER:$TARGET_USER /opt/casparcg
 
+addgroup $TARGET_USER sudo
+
 finished
