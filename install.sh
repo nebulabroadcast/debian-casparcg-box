@@ -138,10 +138,12 @@ install_promexp || error_exit
 chown -R $TARGET_USER:$TARGET_USER /var/playout
 chown -R $TARGET_USER:$TARGET_USER /opt/casparcg
 addgroup $TARGET_USER sudo
+
 #
 # Font and logo
 #
 
+cd $base_dir
 cp support/logo.png /usr/share/pixmaps/nebula.png
 cp -r support/RobotoMono /usr/share/fonts/truetype/
 
