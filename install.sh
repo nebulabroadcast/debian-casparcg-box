@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TARGET_USER=nebula
-DESKTOP_VIDEO_VERSION="11.2a8"
+DESKTOP_VIDEO_VERSION="11.6a26"
 REPO_URL="https://repo.imm.cz"
 
 base_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -25,55 +25,47 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 
-apt-get update
 
-apt-get install -y --no-install-recommends \
-    xorg xinit \
-    xserver-xorg-input-libinput xserver-xorg-input-kbd xserver-xorg-input-mouse \
-    rxvt-unicode xli \
-    python3 python3-pip \
-    linux-headers-$(uname -r) \
-    software-properties-common || error_exit
+function install_base(){
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        xorg xinit \
+        xserver-xorg-input-libinput xserver-xorg-input-kbd xserver-xorg-input-mouse \
+        rxvt-unicode xli \
+        python3 python3-pip \
+        linux-headers-$(uname -r) \
+        software-properties-common || return 1
+}
 
-#
-# Install Nvidia driver
-#
+function install_nvidia(){
+    add-apt-repository contrib
+    add-apt-repository non-free
+    apt-get update
+    apt-get install -y nvidia-driver nvidia-smi || return 1
+}
 
-add-apt-repository contrib
-add-apt-repository non-free
-apt-get update
-apt-get install -y nvidia-driver nvidia-smi
+function install_decklink(){
+    DESKTOP_VIDEO_FNAME="desktopvideo_${DESKTOP_VIDEO_VERSION}_amd64.deb"
+    wget ${REPO_URL}/${DESKTOP_VIDEO_FNAME} || return 1
+    dpkg -i ${DESKTOP_VIDEO_FNAME}
+    apt -y -f install
+}
 
-#
-# Install decklink driver
-#
-
-DESKTOP_VIDEO_FNAME="desktopvideo_${DESKTOP_VIDEO_VERSION}_amd64.deb"
-
-wget ${REPO_URL}/${DESKTOP_VIDEO_FNAME} || error_exit
-dpkg -i ${DESKTOP_VIDEO_FNAME}
-apt -y -f install
-
-#
-# Autologin
-#
-
-getty_dir=/etc/systemd/system/getty@tty1.service.d
-mkdir -p $getty_dir
-cat <<EOT > $getty_dir/override.conf
+function enable_autologin(){
+    getty_dir=/etc/systemd/system/getty@tty1.service.d
+    mkdir -p $getty_dir
+    cat <<EOT > $getty_dir/override.conf
 [Service]
 ExecStart=
 ExecStart=-/sbin/agetty --autologin $TARGET_USER --noclear %I \$TERM
 EOT
+    sed -i -e s/\#NAutoVTs.*/NAutoVTs=1/ /etc/systemd/logind.conf
+    systemctl set-default multi-user.target
+}
 
-sed -i -e s/\#NAutoVTs.*/NAutoVTs=1/ /etc/systemd/logind.conf
-systemctl set-default multi-user.target
 
-#
-# Disable Grub menu
-#
-
-cat <<EOT > /etc/default/grub
+function update_grub(){
+    cat <<EOT > /etc/default/grub
 #GRUB_DEFAULT=0
 #GRUB_TIMEOUT=0
 #GRUB_TIMEOUT_STYLE=hidden
@@ -83,9 +75,69 @@ GRUB_CMDLINE_LINUX_DEFAULT="quiet nomodeset"
 GRUB_CMDLINE_LINUX=""
 GRUB_GFXMODE=800x600
 EOT
+    update-grub
+}
 
-update-grub
 
+
+function install_casparcg(){
+    cd /opt
+    wget ${REPO_URL}/casparcg.tar.gz || return 1
+    tar -xf casparcg.tar.gz
+    rm casparcg.tar.gz
+
+    DIRS=(
+        "media"
+        "template"
+        "log"
+        "data"
+    )
+
+    for dir in ${DIRS[@]}; do
+        if [ ! -d /var/playout/${dir}.dir ]; then
+            mkdir -p /var/playout/${dir}.dir
+        fi
+        if [ -d /opt/casparcg/${dir} ]; then
+            rm -rf /opt/${dir}
+            ln -s /var/playout/${dir}.dir /opt/${dir}
+        fi
+    done
+
+    if [ ! -d /var/playout/fonts.dir ]; then
+        mkdir /var/playout/fonts.dir
+    fi
+    if [ ! -L /usr/share/fonts/truetype/playout ]; then
+        ln -s /var/playout/fonts.dir /usr/share/fonts/truetype/playout
+    fi
+}
+
+
+function install_promexp(){
+    cd /opt
+    if [ ! -d nebula-prometheus-exporter ]; then
+        git clone https://github.com/nebulabroadcast/nebula-prometheus-exporter
+    fi
+    cd nebula-prometheus-exporter
+    git pull
+    make
+    systemctl enable nebula-prometheus-exporter
+    systemctl start nebula-prometheus-exporter
+}
+
+
+install_base || error_exit
+install_nvidia || error_exit
+install_decklink || error_exit
+enable_autologin || error_exit
+update_grub || error_exit
+
+install_casparcg || error_exit
+install_promexp || error_exit
+
+
+chown -R $TARGET_USER:$TARGET_USER /var/playout
+chown -R $TARGET_USER:$TARGET_USER /opt/casparcg
+addgroup $TARGET_USER sudo
 #
 # Font and logo
 #
@@ -105,62 +157,6 @@ chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.profile
 chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.xinitrc
 chown $TARGET_USER:$TARGET_USER /home/$TARGET_USER/.Xresources
 
-#
-# CasparCG
-#
-
-if [ ! -d /var/playout ]; then
-    mkdir /var/playout
-fi
-
-if [ ! -d /var/playout/media.dir ]; then
-    mkdir /var/playout/media.dir
-fi
-
-if [ ! -d /var/playout/templates.dir ]; then
-    mkdir /var/playout/templates.dir
-fi
-
-if [ ! -d /var/playout/log.dir ]; then
-    mkdir /var/playout/log.dir
-fi
-
-cd /opt
-wget ${REPO_URL}/casparcg.tar.gz || return 1
-tar -xf casparcg.tar.gz 
-rm casparcg.tar.gz
-
-if [ -d /opt/casparcg/media ]; then
-    rm -rf /opt/media
-fi
-
-if [ -d /opt/casparcg/template ]; then
-    rm -rf /opt/template
-fi
-
-if [ -d /opt/casparcg/log ]; then
-    rm -rf /opt/log
-fi
-
-ln -s /var/playout/media.dir /opt/casparcg/media
-ln -s /var/playout/templates.dir /opt/casparcg/template
-ln -s /var/playout/log.dir /opt/casparcg/log
-
-chown -R $TARGET_USER:$TARGET_USER /var/playout
-chown -R $TARGET_USER:$TARGET_USER /opt/casparcg
-
-addgroup $TARGET_USER sudo
-
-#
-# Prometheus exporter
-#
-
-cd /opt
-git clone https://github.com/nebulabroadcast/nebula-prometheus-exporter
-cd nebula-prometheus-exporter
-make
-systemctl enable nebula-prometheus-exporter
-systemctl start nebula-prometheus-exporter
 
 
 
